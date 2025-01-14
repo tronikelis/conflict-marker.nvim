@@ -109,8 +109,12 @@ function Conflict:init()
         choice()
     end, {
         nargs = 1,
-        complete = function()
-            return vim.tbl_keys(choice_map)
+        complete = function(query)
+            return vim.iter(vim.tbl_keys(choice_map))
+                :filter(function(x)
+                    return x:sub(1, #query) == query
+                end)
+                :totable()
         end,
     })
 end
