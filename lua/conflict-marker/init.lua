@@ -42,6 +42,7 @@ end
 
 function Conflict:apply_hl()
     local cursor = vim.api.nvim_win_get_cursor(0)
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
 
     while true do
         local start, mid, ending = 0, 0, 0
