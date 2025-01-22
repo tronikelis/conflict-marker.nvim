@@ -153,8 +153,6 @@ function Conflict:conflict_range()
         return
     end
 
-    vim.print({ from = from, to = to })
-
     self:in_buf(function()
         -- don't accept cursor pos
         local up_end = vim.fn.search(CONFLICT_END, "nbW")
