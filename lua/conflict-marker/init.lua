@@ -132,8 +132,8 @@ function Conflict:two_way_search(pattern)
     local down, up = 0, 0
 
     self:in_buf(function()
-        down = vim.fn.search(pattern, "zcnbW")
-        up = vim.fn.search(pattern, "zcnW")
+        down = vim.fn.search(pattern, "cnbW")
+        up = vim.fn.search(pattern, "cnW")
     end)
 
     return down, up
@@ -145,17 +145,19 @@ function Conflict:conflict_range()
     local in_range = true
 
     self:in_buf(function()
-        from = vim.fn.search(CONFLICT_START, "zcnbW")
-        to = vim.fn.search(CONFLICT_END, "zcnW")
+        from = vim.fn.search(CONFLICT_START, "cnbW")
+        to = vim.fn.search(CONFLICT_END, "cnW")
     end)
 
     if from == 0 or to == 0 then
         return
     end
 
+    vim.print({ from = from, to = to })
+
     self:in_buf(function()
         -- don't accept cursor pos
-        local up_end = vim.fn.search(CONFLICT_END, "znbW")
+        local up_end = vim.fn.search(CONFLICT_END, "nbW")
         if up_end == 0 then
             return
         end
