@@ -45,9 +45,10 @@ function Conflict:apply_hl()
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
 
     while true do
-        local start, mid, ending = 0, 0, 0
+        local start, base, mid, ending = 0, 0, 0, 0
         self:in_buf(function()
             start = vim.fn.search(CONFLICT_START, "cW")
+            base = vim.fn.search(CONFLICT_BASE, "cW")
             mid = vim.fn.search(CONFLICT_MID, "cW")
             ending = vim.fn.search(CONFLICT_END, "cW")
         end)
@@ -56,7 +57,12 @@ function Conflict:apply_hl()
             break
         end
 
-        for i = start - 1, mid - 2 do
+        local base_delta = 0
+        if base ~= 0 then
+            base_delta = mid - base
+        end
+
+        for i = start - 1, mid - base_delta - 2 do
             vim.api.nvim_buf_add_highlight(self.bufnr, self.ns, HL_CONFLICT_OURS, i, 0, -1)
         end
         for i = mid, ending - 1 do
