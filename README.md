@@ -61,9 +61,13 @@ conflict, because those groups interfere heavily with `conflict-marker.nvim` hig
 
 ### Groups
 
+- `ConflictOursMarker`
 - `ConflictOurs`
 - `ConflictTheirs`
-
+- `ConflictTheirsMarker`
+- `ConflictMid`
+- `ConflictBaseMarker`
+- `ConflictBase`
 
 ## Config
 

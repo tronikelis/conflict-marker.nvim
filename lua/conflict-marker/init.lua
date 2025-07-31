@@ -7,8 +7,14 @@ local CONFLICT_END = "^>>>>>>>"
 local CONFLICT_MID = "^=======$"
 local CONFLICT_BASE = "^|||||||"
 
+local HL_CONFLICT_OURS_MARKER = "ConflictOursMarker"
 local HL_CONFLICT_OURS = "ConflictOurs"
 local HL_CONFLICT_THEIRS = "ConflictTheirs"
+local HL_CONFLICT_THEIRS_MARKER = "ConflictTheirsMarker"
+local HL_CONFLICT_MID = "ConflictMid"
+
+local HL_CONFLICT_BASE_MARKER = "ConflictBaseMarker"
+local HL_CONFLICT_BASE = "ConflictBase"
 
 local CONFLICT_NS = "ns_conflict-marker.nvim"
 
@@ -33,9 +39,7 @@ function Conflict:new(bufnr)
         bufnr = bufnr,
         ns = vim.api.nvim_create_namespace(CONFLICT_NS),
     }
-
-    setmetatable(obj, self)
-    self.__index = self
+    setmetatable(obj, { __index = self })
 
     return obj
 end
@@ -62,15 +66,42 @@ function Conflict:apply_hl()
             base_delta = mid - base
         end
 
-        for i = start - 1, mid - base_delta - 2 do
-            vim.api.nvim_buf_add_highlight(self.bufnr, self.ns, HL_CONFLICT_OURS, i, 0, -1)
+        self:apply_line_highlight(start - 1, start, HL_CONFLICT_OURS_MARKER, "(Our changes)")
+        self:apply_line_highlight(start, mid - base_delta - 1, HL_CONFLICT_OURS)
+
+        if base ~= 0 then
+            self:apply_line_highlight(base - 1, base, HL_CONFLICT_BASE_MARKER, "(Base)")
+            self:apply_line_highlight(base, mid - 1, HL_CONFLICT_BASE)
         end
-        for i = mid, ending - 1 do
-            vim.api.nvim_buf_add_highlight(self.bufnr, self.ns, HL_CONFLICT_THEIRS, i, 0, -1)
-        end
+
+        self:apply_line_highlight(mid - 1, mid, HL_CONFLICT_MID)
+
+        self:apply_line_highlight(mid, ending - 1, HL_CONFLICT_THEIRS)
+        self:apply_line_highlight(ending - 1, ending, HL_CONFLICT_THEIRS_MARKER, "(Theirs changes)")
     end
 
     vim.api.nvim_win_set_cursor(0, cursor)
+end
+
+---@param start integer
+---@param ending integer
+---@param group string
+---@param virt_text? string
+function Conflict:apply_line_highlight(start, ending, group, virt_text)
+    if virt_text then
+        vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, start, 0, {
+            invalidate = true,
+            virt_text = { { virt_text } },
+            hl_mode = "combine",
+        })
+    end
+
+    vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, start, 0, {
+        end_row = ending,
+        end_col = 0,
+        hl_eol = true,
+        hl_group = group,
+    })
 end
 
 function Conflict:init()
@@ -264,21 +295,67 @@ function Conflict:choose_none()
     vim.api.nvim_buf_set_lines(self.bufnr, from - 1, to, true, {})
 end
 
+---@param color integer
+---@param factor number
+local function multiply_color(color, factor)
+    local r = bit.rshift(bit.band(color, 0xFF0000), 4 * 4)
+    local g = bit.rshift(bit.band(color, 0x00FF00), 2 * 4)
+    local b = bit.band(color, 0x0000FF)
+
+    r = math.min(math.floor(r * factor), 255)
+    g = math.min(math.floor(g * factor), 255)
+    b = math.min(math.floor(b * factor), 255)
+
+    r = bit.band(bit.lshift(r, 4 * 4), 0xFF0000)
+    g = bit.band(bit.lshift(g, 2 * 4), 0x00FF00)
+
+    return bit.bor(r, g, b)
+end
+
 ---@param config conflict-marker.Config?
 function M.setup(config)
     config = config or {}
     M.config = vim.tbl_deep_extend("force", M.config, config)
 
+    -- not using a link because these groups will be deleted in the namespace
     local diff_add = vim.api.nvim_get_hl(0, { name = "DiffAdd" })
-    local diff_del = vim.api.nvim_get_hl(0, { name = "DiffChange" })
+    local diff_change = vim.api.nvim_get_hl(0, { name = "DiffChange" })
 
+    vim.api.nvim_set_hl(0, HL_CONFLICT_OURS_MARKER, {
+        default = true,
+        bold = true,
+        bg = multiply_color(diff_change.bg, 1.4),
+        fg = "LightGray",
+    })
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS, {
         default = true,
-        bg = diff_add.bg,
+        bg = diff_change.bg,
     })
+
+    vim.api.nvim_set_hl(0, HL_CONFLICT_BASE_MARKER, {
+        default = true,
+        bold = true,
+        fg = "LightGray",
+    })
+    vim.api.nvim_set_hl(0, HL_CONFLICT_BASE, {
+        default = true,
+    })
+
+    vim.api.nvim_set_hl(0, HL_CONFLICT_MID, {
+        default = true,
+        bold = true,
+        fg = "LightGray",
+    })
+
     vim.api.nvim_set_hl(0, HL_CONFLICT_THEIRS, {
         default = true,
-        bg = diff_del.bg,
+        bg = multiply_color(diff_add.bg, 0.6),
+    })
+    vim.api.nvim_set_hl(0, HL_CONFLICT_THEIRS_MARKER, {
+        default = true,
+        bold = true,
+        bg = multiply_color(diff_add.bg, 0.7),
+        fg = "LightGray",
     })
 
     ---@param bufnr integer
