@@ -101,6 +101,7 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
         end_col = 0,
         hl_eol = true,
         hl_group = group,
+        priority = vim.hl.priorities.user - 1,
     })
 end
 
