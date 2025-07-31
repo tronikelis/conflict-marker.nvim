@@ -7,7 +7,7 @@ RUN echo "$(luarocks path --bin)" >> ~/.profile
 
 # install neovim
 RUN <<EOF
-curl -LO https://github.com/neovim/neovim/releases/download/v0.10.4/nvim-linux-x86_64.tar.gz
+curl -LO https://github.com/neovim/neovim/releases/download/v0.11.3/nvim-linux-x86_64.tar.gz
 rm -rf /opt/nvim
 tar -C /opt -xzf nvim-linux-x86_64.tar.gz
 EOF

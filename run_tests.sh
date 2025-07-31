@@ -2,10 +2,7 @@
 
 (
     cd test || exit
-
-    if ! docker image ls | grep tronikel/conflict-marker.nvim-test &>/dev/null; then
-        docker build -t tronikel/conflict-marker.nvim-test .
-    fi
+    docker build -t tronikel/conflict-marker.nvim-test . || exit
 )
 
 docker run --rm \
