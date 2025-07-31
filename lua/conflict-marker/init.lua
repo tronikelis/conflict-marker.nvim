@@ -49,16 +49,22 @@ function Conflict:apply_hl()
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
 
     while true do
-        local start, base, mid, ending = 0, 0, 0, 0
-        self:in_buf(function()
-            start = vim.fn.search(CONFLICT_START, "cW")
-            base = vim.fn.search(CONFLICT_BASE, "cW")
-            mid = vim.fn.search(CONFLICT_MID, "cW")
-            ending = vim.fn.search(CONFLICT_END, "cW")
-        end)
-
-        if start == 0 or mid == 0 or ending == 0 then
+        if vim.fn.search(CONFLICT_START, "cW") == 0 then
             break
+        end
+
+        local start, ending = self:conflict_range()
+        if not start or not ending then
+            break
+        end
+
+        local mid = utils.target_in_range(start, ending, self:two_way_search(CONFLICT_MID))
+        local base = utils.target_in_range(start, ending, self:two_way_search(CONFLICT_BASE)) or 0
+        if not mid then
+            break
+        end
+        if base > mid then
+            base = 0
         end
 
         local base_delta = 0
@@ -78,6 +84,10 @@ function Conflict:apply_hl()
 
         self:apply_line_highlight(mid, ending - 1, HL_CONFLICT_THEIRS)
         self:apply_line_highlight(ending - 1, ending, HL_CONFLICT_THEIRS_MARKER, "(Theirs changes)")
+
+        if vim.fn.search(CONFLICT_END, "W") == 0 then
+            break
+        end
     end
 
     vim.api.nvim_win_set_cursor(0, cursor)
