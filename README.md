@@ -36,7 +36,7 @@ You can customize these colors, I just picked something at random :P
 
 ## Philosophy
 
-- it has to be simple (in fact whole plugin is under 300 lua loc)
+- it has to be simple (in fact whole plugin is ~400 lua loc)
 - performance-first (finding conflicts does not load whole buf into extra memory)
 
 
