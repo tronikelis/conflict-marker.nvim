@@ -4,13 +4,13 @@
 The simple git conflict resolver for neovim
 
 
-![image](https://github.com/user-attachments/assets/c4478663-0ec3-4f72-9b0d-e4ad98cf5e38)
+![image](https://github.com/user-attachments/assets/5d4861a4-fabe-4569-a2e3-a3bfb2c9bc53)
 
 <details>
   <summary>quick demo</summary>
 
 
-https://github.com/user-attachments/assets/45c99347-41ad-481a-afa8-c7bfcae4a265
+https://github.com/user-attachments/assets/bb4c5abd-9475-4aaa-84e2-5cb5cbfdfd8e
 
 
 
@@ -36,7 +36,7 @@ You can customize these colors, I just picked something at random :P
 
 ## Philosophy
 
-- it has to be simple (in fact whole plugin is under 300 lua loc)
+- it has to be simple (in fact whole plugin is ~400 lua loc)
 - performance-first (finding conflicts does not load whole buf into extra memory)
 
 
@@ -61,9 +61,13 @@ conflict, because those groups interfere heavily with `conflict-marker.nvim` hig
 
 ### Groups
 
+- `ConflictOursMarker`
 - `ConflictOurs`
 - `ConflictTheirs`
-
+- `ConflictTheirsMarker`
+- `ConflictMid`
+- `ConflictBaseMarker`
+- `ConflictBase`
 
 ## Config
 
