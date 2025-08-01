@@ -112,6 +112,8 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
         hl_eol = true,
         hl_group = group,
         priority = vim.highlight.priorities.user - 1,
+        right_gravity = not not virt_text,
+        end_right_gravity = not virt_text,
     })
 end
 
