@@ -80,7 +80,7 @@ function Conflict:apply_hl()
             self:apply_line_highlight(base, mid - 1, HL_CONFLICT_BASE)
         end
 
-        self:apply_line_highlight(mid - 1, mid, HL_CONFLICT_MID)
+        self:apply_line_highlight(mid - 1, mid, HL_CONFLICT_MID, "")
 
         self:apply_line_highlight(mid, ending - 1, HL_CONFLICT_THEIRS)
         self:apply_line_highlight(ending - 1, ending, HL_CONFLICT_THEIRS_MARKER, "(Theirs changes)")
