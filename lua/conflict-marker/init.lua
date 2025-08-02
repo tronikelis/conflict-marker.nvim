@@ -16,7 +16,7 @@ local HL_CONFLICT_MID = "ConflictMid"
 local HL_CONFLICT_BASE_MARKER = "ConflictBaseMarker"
 local HL_CONFLICT_BASE = "ConflictBase"
 
-local CONFLICT_NS = "ns_conflict-marker.nvim"
+local NS_HL = vim.api.nvim_create_namespace("conflict-marker.nvim/hl")
 
 ---@class conflict-marker.Config
 ---@field on_attach fun(arg: conflict-marker.Conflict)
@@ -28,7 +28,6 @@ M.config = {
 
 ---@class conflict-marker.Conflict
 ---@field bufnr integer
----@field ns integer
 local Conflict = {}
 
 ---@param bufnr integer
@@ -37,19 +36,24 @@ function Conflict:new(bufnr)
     ---@type conflict-marker.Conflict
     local obj = {
         bufnr = bufnr,
-        ns = vim.api.nvim_create_namespace(CONFLICT_NS),
     }
     setmetatable(obj, { __index = self })
 
     return obj
 end
 
-function Conflict:apply_hl()
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+function Conflict:refresh_hl()
+    vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, 0, -1)
+
+    local cursor = vim.fn.getcurpos()
+    vim.fn.cursor(1, 1)
 
     while true do
-        if vim.fn.search(CONFLICT_START, "cW") == 0 then
+        local conflict_start = 0
+        self:in_buf(function()
+            conflict_start = vim.fn.search(CONFLICT_START, "cW")
+        end)
+        if conflict_start == 0 then
             break
         end
 
@@ -85,12 +89,16 @@ function Conflict:apply_hl()
         self:apply_line_highlight(mid, ending - 1, HL_CONFLICT_THEIRS)
         self:apply_line_highlight(ending - 1, ending, HL_CONFLICT_THEIRS_MARKER, "(Theirs changes)")
 
-        if vim.fn.search(CONFLICT_END, "W") == 0 then
+        local conflict_end = 0
+        self:in_buf(function()
+            conflict_end = vim.fn.search(CONFLICT_END, "W")
+        end)
+        if conflict_end == 0 then
             break
         end
     end
 
-    vim.api.nvim_win_set_cursor(0, cursor)
+    vim.fn.setpos(".", cursor)
 end
 
 ---@param start integer
@@ -99,14 +107,14 @@ end
 ---@param virt_text? string
 function Conflict:apply_line_highlight(start, ending, group, virt_text)
     if virt_text then
-        vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, start, 0, {
+        vim.api.nvim_buf_set_extmark(self.bufnr, NS_HL, start, 0, {
             invalidate = true,
             virt_text = { { virt_text } },
             hl_mode = "combine",
         })
     end
 
-    vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, start, 0, {
+    vim.api.nvim_buf_set_extmark(self.bufnr, NS_HL, start, 0, {
         end_row = ending,
         end_col = 0,
         hl_eol = true,
@@ -117,9 +125,40 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
     })
 end
 
+---@return number
+local function current_ms()
+    return vim.uv.hrtime() / 1000 / 1000
+end
+
+---@param callback function
+---@param ms integer
+local function throttle(callback, ms)
+    local timer = assert(vim.uv.new_timer())
+    local time
+
+    return function(...)
+        local args = { ... }
+
+        if not time then
+            time = current_ms()
+        end
+        if current_ms() - time > ms then
+            timer:stop()
+            callback(unpack(args))
+            time = nil
+            return
+        end
+
+        timer:start(ms, 0, function()
+            vim.schedule_wrap(callback)(unpack(args))
+            time = nil
+        end)
+    end
+end
+
 function Conflict:init()
     if M.config.highlights then
-        vim.api.nvim_win_set_hl_ns(0, self.ns)
+        vim.api.nvim_win_set_hl_ns(0, NS_HL)
 
         --- default diff hl interferes heavily,
         --- so there is no point in keeping them
@@ -129,10 +168,17 @@ function Conflict:init()
             "DiffDelete",
             "DiffText",
         }) do
-            vim.api.nvim_set_hl(self.ns, v, {})
+            vim.api.nvim_set_hl(NS_HL, v, {})
         end
 
-        self:apply_hl()
+        vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWinEnter" }, {
+            buffer = self.bufnr,
+            callback = throttle(function()
+                self:refresh_hl()
+            end, 100),
+        })
+
+        self:refresh_hl()
     end
 
     local choice_map = {
