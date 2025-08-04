@@ -377,8 +377,8 @@ function M.setup(config)
     M.config = vim.tbl_deep_extend("force", M.config, config)
 
     -- not using a link because these groups will be deleted in the namespace
-    local diff_add = vim.api.nvim_get_hl(0, { name = "DiffAdd" })
-    local diff_change = vim.api.nvim_get_hl(0, { name = "DiffChange" })
+    local diff_add = vim.api.nvim_get_hl(0, { name = "DiffAdd", link = false })
+    local diff_change = vim.api.nvim_get_hl(0, { name = "DiffChange", link = false })
 
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS_MARKER, {
         default = true,
