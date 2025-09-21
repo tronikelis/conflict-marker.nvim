@@ -383,12 +383,12 @@ function M.setup(config)
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS_MARKER, {
         default = true,
         bold = true,
-        bg = multiply_color(diff_change.bg, 1.4),
+        bg = multiply_color(diff_change.bg, 0.7),
         fg = "LightGray",
     })
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS, {
         default = true,
-        bg = diff_change.bg,
+        bg = multiply_color(diff_change.bg, 0.6),
     })
 
     vim.api.nvim_set_hl(0, HL_CONFLICT_BASE_MARKER, {
