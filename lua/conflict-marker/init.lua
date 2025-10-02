@@ -172,6 +172,7 @@ function Conflict:init()
         end
 
         vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWinEnter" }, {
+            group = vim.api.nvim_create_augroup(string.format("conflict-marker.nvim/Conflict:init%d", self.bufnr), {}),
             buffer = self.bufnr,
             callback = throttle(function()
                 self:refresh_hl()
@@ -380,6 +381,8 @@ function M.setup(config)
     local diff_add = vim.api.nvim_get_hl(0, { name = "DiffAdd", link = false })
     local diff_change = vim.api.nvim_get_hl(0, { name = "DiffChange", link = false })
 
+    local augroup = vim.api.nvim_create_augroup("conflict-marker.nvim/setup", {})
+
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS_MARKER, {
         default = true,
         bold = true,
@@ -441,6 +444,7 @@ function M.setup(config)
     end
 
     vim.api.nvim_create_autocmd("BufReadPost", {
+        group = augroup,
         callback = function(ev)
             check_file(ev.buf)
         end,
