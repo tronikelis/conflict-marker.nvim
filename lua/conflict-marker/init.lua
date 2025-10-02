@@ -157,6 +157,8 @@ local function throttle(callback, ms)
 end
 
 function Conflict:init()
+    local augroup = vim.api.nvim_create_augroup(string.format("conflict-marker.nvim/Conflict:init%d", self.bufnr), {})
+
     if M.config.highlights then
         vim.api.nvim_win_set_hl_ns(0, NS_HL)
 
@@ -172,7 +174,7 @@ function Conflict:init()
         end
 
         vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWinEnter" }, {
-            group = vim.api.nvim_create_augroup(string.format("conflict-marker.nvim/Conflict:init%d", self.bufnr), {}),
+            group = augroup,
             buffer = self.bufnr,
             callback = throttle(function()
                 self:refresh_hl()
