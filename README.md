@@ -109,7 +109,7 @@ require("conflict-marker").setup({
       vim.keymap.set("n", key, fn, { buffer = conflict.bufnr })
     end
 
-    -- or you can map these to <cmd>ChooseOurs<cr>
+    -- or you can map these to <cmd>Choose ours<cr>
 
     map("co", function()
       conflict:choose_ours()
