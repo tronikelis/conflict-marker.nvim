@@ -379,7 +379,6 @@ function M.setup(config)
     config = config or {}
     M.config = vim.tbl_deep_extend("force", M.config, config)
 
-    -- not using a link because these groups will be deleted in the namespace
     local diff_add = vim.api.nvim_get_hl(0, { name = "DiffAdd", link = false })
     local diff_change = vim.api.nvim_get_hl(0, { name = "DiffChange", link = false })
 
@@ -388,12 +387,12 @@ function M.setup(config)
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS_MARKER, {
         default = true,
         bold = true,
-        bg = multiply_color(diff_change.bg, 0.7),
+        bg = diff_change.bg and multiply_color(diff_change.bg, 0.7),
         fg = "LightGray",
     })
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS, {
         default = true,
-        bg = multiply_color(diff_change.bg, 0.6),
+        bg = diff_change.bg and multiply_color(diff_change.bg, 0.6),
     })
 
     vim.api.nvim_set_hl(0, HL_CONFLICT_BASE_MARKER, {
@@ -413,12 +412,12 @@ function M.setup(config)
 
     vim.api.nvim_set_hl(0, HL_CONFLICT_THEIRS, {
         default = true,
-        bg = multiply_color(diff_add.bg, 0.6),
+        bg = diff_add.bg and multiply_color(diff_add.bg, 0.6),
     })
     vim.api.nvim_set_hl(0, HL_CONFLICT_THEIRS_MARKER, {
         default = true,
         bold = true,
-        bg = multiply_color(diff_add.bg, 0.7),
+        bg = diff_add.bg and multiply_color(diff_add.bg, 0.7),
         fg = "LightGray",
     })
 
