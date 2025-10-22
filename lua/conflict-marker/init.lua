@@ -387,12 +387,12 @@ function M.setup(config)
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS_MARKER, {
         default = true,
         bold = true,
-        bg = diff_change.bg and multiply_color(diff_change.bg, 0.7),
+        bg = diff_change.bg and multiply_color(diff_change.bg, 0.8),
         fg = "LightGray",
     })
     vim.api.nvim_set_hl(0, HL_CONFLICT_OURS, {
         default = true,
-        bg = diff_change.bg and multiply_color(diff_change.bg, 0.6),
+        bg = diff_change.bg,
     })
 
     vim.api.nvim_set_hl(0, HL_CONFLICT_BASE_MARKER, {
@@ -412,12 +412,12 @@ function M.setup(config)
 
     vim.api.nvim_set_hl(0, HL_CONFLICT_THEIRS, {
         default = true,
-        bg = diff_add.bg and multiply_color(diff_add.bg, 0.6),
+        bg = diff_add.bg,
     })
     vim.api.nvim_set_hl(0, HL_CONFLICT_THEIRS_MARKER, {
         default = true,
         bold = true,
-        bg = diff_add.bg and multiply_color(diff_add.bg, 0.7),
+        bg = diff_add.bg and multiply_color(diff_add.bg, 0.8),
         fg = "LightGray",
     })
 
