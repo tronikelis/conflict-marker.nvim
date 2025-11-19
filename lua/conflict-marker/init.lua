@@ -125,40 +125,7 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
     })
 end
 
----@return number
-local function current_ms()
-    return vim.uv.hrtime() / 1000 / 1000
-end
-
----@param callback function
----@param ms integer
-local function throttle(callback, ms)
-    local timer = assert(vim.uv.new_timer())
-    local time
-
-    return function(...)
-        local args = { ... }
-
-        if not time then
-            time = current_ms()
-        end
-        if current_ms() - time > ms then
-            timer:stop()
-            callback(unpack(args))
-            time = nil
-            return
-        end
-
-        timer:start(ms, 0, function()
-            vim.schedule_wrap(callback)(unpack(args))
-            time = nil
-        end)
-    end
-end
-
 function Conflict:init()
-    local augroup = vim.api.nvim_create_augroup(string.format("conflict-marker.nvim/Conflict:init%d", self.bufnr), {})
-
     if M.config.highlights then
         vim.api.nvim_win_set_hl_ns(0, NS_HL)
 
@@ -172,14 +139,6 @@ function Conflict:init()
         }) do
             vim.api.nvim_set_hl(NS_HL, v, {})
         end
-
-        vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWinEnter" }, {
-            group = augroup,
-            buffer = self.bufnr,
-            callback = throttle(function()
-                self:refresh_hl()
-            end, 100),
-        })
 
         self:refresh_hl()
     end
