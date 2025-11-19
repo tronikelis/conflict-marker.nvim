@@ -42,30 +42,38 @@ function Conflict:new(bufnr)
     return obj
 end
 
-function Conflict:refresh_hl()
-    vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, 0, -1)
+function Conflict:with_cursor_in_conflict_region(fn)
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local extmarks = vim.api.nvim_buf_get_extmarks(
+        self.bufnr,
+        NS_HL,
+        { cursor[1] - 1, 0 },
+        { cursor[1] - 1, 0 },
+        { overlap = true }
+    )
 
-    local cursor = vim.fn.getcurpos()
-    vim.fn.cursor(1, 1)
+    if #extmarks ~= 0 then
+        vim.api.nvim_win_set_cursor(0, { extmarks[1][2] + 1, 0 })
+    end
 
-    while true do
-        local conflict_start = 0
-        self:in_buf(function()
-            conflict_start = vim.fn.search(CONFLICT_START, "cW")
-        end)
-        if conflict_start == 0 then
-            break
-        end
+    fn()
 
+    vim.api.nvim_win_set_cursor(0, cursor)
+end
+
+function Conflict:refresh_hl_cursor()
+    self:with_cursor_in_conflict_region(function()
         local start, ending = self:conflict_range()
         if not start or not ending then
-            break
+            return
         end
+
+        vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, start - 1, ending)
 
         local mid = utils.target_in_range(start, ending, self:two_way_search(CONFLICT_MID))
         local base = utils.target_in_range(start, ending, self:two_way_search(CONFLICT_BASE)) or 0
         if not mid then
-            break
+            return
         end
         if base > mid then
             base = 0
@@ -88,6 +96,25 @@ function Conflict:refresh_hl()
 
         self:apply_line_highlight(mid, ending - 1, HL_CONFLICT_THEIRS)
         self:apply_line_highlight(ending - 1, ending, HL_CONFLICT_THEIRS_MARKER, "(Theirs changes)")
+    end)
+end
+
+function Conflict:refresh_hl_all()
+    vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, 0, -1)
+
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+    while true do
+        local conflict_start = 0
+        self:in_buf(function()
+            conflict_start = vim.fn.search(CONFLICT_START, "cW")
+        end)
+        if conflict_start == 0 then
+            break
+        end
+
+        self:refresh_hl_cursor()
 
         local conflict_end = 0
         self:in_buf(function()
@@ -98,7 +125,7 @@ function Conflict:refresh_hl()
         end
     end
 
-    vim.fn.setpos(".", cursor)
+    vim.api.nvim_win_set_cursor(0, cursor)
 end
 
 ---@param start integer
@@ -125,37 +152,6 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
     })
 end
 
----@return number
-local function current_ms()
-    return vim.uv.hrtime() / 1000 / 1000
-end
-
----@param callback function
----@param ms integer
-local function throttle(callback, ms)
-    local timer = assert(vim.uv.new_timer())
-    local time
-
-    return function(...)
-        local args = { ... }
-
-        if not time then
-            time = current_ms()
-        end
-        if current_ms() - time > ms then
-            timer:stop()
-            callback(unpack(args))
-            time = nil
-            return
-        end
-
-        timer:start(ms, 0, function()
-            vim.schedule_wrap(callback)(unpack(args))
-            time = nil
-        end)
-    end
-end
-
 function Conflict:init()
     local augroup = vim.api.nvim_create_augroup(string.format("conflict-marker.nvim/Conflict:init%d", self.bufnr), {})
 
@@ -173,15 +169,15 @@ function Conflict:init()
             vim.api.nvim_set_hl(NS_HL, v, {})
         end
 
-        vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWinEnter" }, {
+        vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
             group = augroup,
             buffer = self.bufnr,
-            callback = throttle(function()
-                self:refresh_hl()
-            end, 100),
+            callback = function()
+                self:refresh_hl_cursor()
+            end,
         })
 
-        self:refresh_hl()
+        self:refresh_hl_all()
     end
 
     local choice_map = {
