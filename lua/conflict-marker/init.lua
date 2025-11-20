@@ -138,6 +138,7 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
             invalidate = true,
             virt_text = { { virt_text } },
             hl_mode = "combine",
+            priority = 0,
         })
     end
 
