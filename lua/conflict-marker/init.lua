@@ -43,22 +43,22 @@ function Conflict:new(bufnr)
 end
 
 function Conflict:with_cursor_in_conflict_region(fn)
-    local cursor = vim.api.nvim_win_get_cursor(0)
+    local cursor = vim.fn.getpos(".")
     local extmarks = vim.api.nvim_buf_get_extmarks(
         self.bufnr,
         NS_HL,
-        { cursor[1] - 1, 0 },
-        { cursor[1] - 1, 0 },
+        { cursor[2] - 1, 0 },
+        { cursor[2] - 1, 0 },
         { overlap = true }
     )
 
     if #extmarks ~= 0 then
-        vim.api.nvim_win_set_cursor(0, { extmarks[1][2] + 1, 0 })
+        vim.fn.cursor(extmarks[1][2] + 1, 1)
     end
 
     fn()
 
-    vim.api.nvim_win_set_cursor(0, cursor)
+    vim.fn.setpos(".", cursor)
 end
 
 function Conflict:refresh_hl_cursor()
@@ -102,8 +102,8 @@ end
 function Conflict:refresh_hl_all()
     vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, 0, -1)
 
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    local cursor = vim.fn.getpos(".")
+    vim.fn.cursor(1, 1)
 
     while true do
         local conflict_start = 0
@@ -125,7 +125,7 @@ function Conflict:refresh_hl_all()
         end
     end
 
-    vim.api.nvim_win_set_cursor(0, cursor)
+    vim.fn.setpos(".", cursor)
 end
 
 ---@param start integer
