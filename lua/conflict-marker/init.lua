@@ -47,8 +47,8 @@ function Conflict:with_cursor_in_conflict_region(fn)
     local extmarks = vim.api.nvim_buf_get_extmarks(
         self.bufnr,
         NS_HL,
-        { cursor[1] - 1, 0 },
-        { cursor[1] - 1, 0 },
+        { cursor[2] - 1, 0 },
+        { cursor[2] - 1, 0 },
         { overlap = true }
     )
 
