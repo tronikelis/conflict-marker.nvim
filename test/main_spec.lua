@@ -63,7 +63,7 @@ describe("main", function()
                 exec_lua(
                     [[
                         vim.api.nvim_buf_set_lines(0, 0, -1, true, ({...})[1])
-                        vim.cmd("doautocmd BufReadPost")
+                        require("conflict-marker").check()
                     ]],
                     lines
                 )
@@ -137,7 +137,7 @@ describe("main", function()
                 local lines = ({...})[1]
 
                 vim.api.nvim_buf_set_lines(0, 0, -1, true, lines)
-                vim.cmd("doautocmd BufReadPost")
+                require("conflict-marker").check()
 
                 vim.api.nvim_win_set_cursor(0, { #lines, 0 })
 
