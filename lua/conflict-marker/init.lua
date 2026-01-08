@@ -27,7 +27,6 @@ function M.check(buf)
     end
 
     local conflict = 0
-
     vim.api.nvim_buf_call(buf, function()
         conflict = vim.fn.search(require("conflict-marker.config").config.markers.mid, "ncw")
     end)
