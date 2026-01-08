@@ -11,6 +11,9 @@ local Conflict = {}
 ---@param bufnr integer
 ---@return conflict-marker.Conflict
 function Conflict:new(bufnr)
+    if bufnr == 0 then
+        bufnr = vim.api.nvim_get_current_buf()
+    end
     ---@type conflict-marker.Conflict
     local obj = {
         bufnr = bufnr,

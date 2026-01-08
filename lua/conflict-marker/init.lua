@@ -19,8 +19,13 @@ local function multiply_color(color, factor)
     return bit.bor(r, g, b)
 end
 
----@param buf integer
+---@param buf integer?
 function M.check(buf)
+    buf = buf or 0
+    if buf == 0 then
+        buf = vim.api.nvim_get_current_buf()
+    end
+
     local conflict = 0
 
     vim.api.nvim_buf_call(buf, function()
