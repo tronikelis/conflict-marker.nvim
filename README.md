@@ -36,7 +36,7 @@ You can customize these colors, I just picked something at random :P
 
 ## Philosophy
 
-- it has to be simple (in fact whole plugin is ~400 lua loc)
+- it has to be simple
 - performance-first (finding conflicts does not load whole buf into extra memory)
 
 
@@ -71,10 +71,20 @@ conflict, because those groups interfere heavily with `conflict-marker.nvim` hig
 
 ## Config
 
+DO NOT LAZY LOAD THIS PLUGIN, it doesn't load unnecessarily
+
+Use `lazy=false` if using lazy.nvim
+
 ```lua
 require("conflict-marker").setup({
   highlights = true,
-  on_attach = function(conflict) end,
+  on_attach = function() end,
+  markers = {
+      start = "^<<<<<<<",
+      ending = "^>>>>>>>",
+      mid = "^=======$",
+      base = "^|||||||",
+  },
 })
 ```
 
