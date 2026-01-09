@@ -134,34 +134,131 @@ function Conflict:apply_line_highlight(start, ending, group, virt_text)
     })
 end
 
-function Conflict:init()
+function Conflict:init_hl()
     local augroup = vim.api.nvim_create_augroup(string.format("conflict-marker.nvim/Conflict:init%d", self.bufnr), {})
 
-    if require("conflict-marker.config").config.highlights then
-        vim.api.nvim_win_set_hl_ns(0, NS_HL)
+    vim.api.nvim_win_set_hl_ns(0, NS_HL)
 
-        --- default diff hl interferes heavily,
-        --- so there is no point in keeping them
-        for _, v in ipairs({
-            "DiffAdd",
-            "DiffChange",
-            "DiffDelete",
-            "DiffText",
-        }) do
-            vim.api.nvim_set_hl(NS_HL, v, {})
-        end
-
-        vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
-            group = augroup,
-            buffer = self.bufnr,
-            callback = function()
-                self:refresh_hl_cursor()
-            end,
-        })
-
-        self:refresh_hl_all()
+    --- default diff hl interferes heavily,
+    --- so there is no point in keeping them
+    for _, v in ipairs({
+        "DiffAdd",
+        "DiffChange",
+        "DiffDelete",
+        "DiffText",
+    }) do
+        vim.api.nvim_set_hl(NS_HL, v, {})
     end
 
+    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+        group = augroup,
+        buffer = self.bufnr,
+        callback = function()
+            self:refresh_hl_cursor()
+        end,
+    })
+
+    self:refresh_hl_all()
+end
+
+---@param original_buf integer
+---@param lines string[]
+local function create_scratch_diff_buf(original_buf, lines)
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].bufhidden = "wipe"
+    vim.bo[buf].undofile = false
+    vim.bo[buf].filetype = vim.bo[original_buf].filetype
+    vim.api.nvim_buf_set_lines(buf, 0, -1, true, lines)
+    return buf
+end
+
+---@param buf1 integer
+---@param buf2 integer
+local function create_diff_windows(buf1, buf2)
+    local win1 = vim.api.nvim_open_win(buf1, true, {
+        split = "below",
+    })
+    vim.cmd("diffthis")
+    local win2 = vim.api.nvim_open_win(buf2, true, {
+        split = "right",
+    })
+    vim.cmd("diffthis")
+    vim.api.nvim_set_current_win(win1)
+
+    vim.api.nvim_create_autocmd("WinClosed", {
+        pattern = { tostring(win1), tostring(win2) },
+        once = true,
+        callback = function()
+            vim.api.nvim_win_close(win1, true)
+            vim.api.nvim_win_close(win2, true)
+        end,
+    })
+end
+
+function Conflict:diff_ours_theirs()
+    local from, to = self:conflict_range()
+    if not from or not to then
+        return
+    end
+
+    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
+    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    if not mid then
+        return
+    end
+    if not base then
+        base = mid
+    end
+
+    local ours_lines = vim.api.nvim_buf_get_lines(self.bufnr, from, base - 1, true)
+    local theirs_lines = vim.api.nvim_buf_get_lines(self.bufnr, mid, to - 1, true)
+
+    local ours_buf = create_scratch_diff_buf(self.bufnr, ours_lines)
+    local theirs_buf = create_scratch_diff_buf(self.bufnr, theirs_lines)
+    create_diff_windows(ours_buf, theirs_buf)
+end
+
+function Conflict:diff_base_ours()
+    local from, to = self:conflict_range()
+    if not from or not to then
+        return
+    end
+
+    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
+    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    if not base or not mid then
+        return
+    end
+
+    local base_lines = vim.api.nvim_buf_get_lines(self.bufnr, base, mid - 1, true)
+    local ours_lines = vim.api.nvim_buf_get_lines(self.bufnr, from, base - 1, true)
+
+    local base_buf = create_scratch_diff_buf(self.bufnr, base_lines)
+    local ours_buf = create_scratch_diff_buf(self.bufnr, ours_lines)
+    create_diff_windows(base_buf, ours_buf)
+end
+
+function Conflict:diff_base_theirs()
+    local from, to = self:conflict_range()
+    if not from or not to then
+        return
+    end
+
+    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
+    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    if not base or not mid then
+        return
+    end
+
+    local base_lines = vim.api.nvim_buf_get_lines(self.bufnr, base, mid - 1, true)
+    local theirs_lines = vim.api.nvim_buf_get_lines(self.bufnr, mid, to - 1, true)
+
+    local base_buf = create_scratch_diff_buf(self.bufnr, base_lines)
+    local theirs_buf = create_scratch_diff_buf(self.bufnr, theirs_lines)
+    create_diff_windows(base_buf, theirs_buf)
+end
+
+function Conflict:init_user_cmd()
     local choice_map = {
         ours = function()
             self:choose_ours()
@@ -174,6 +271,15 @@ function Conflict:init()
         end,
         none = function()
             self:choose_none()
+        end,
+        diffOursTheirs = function()
+            self:diff_ours_theirs()
+        end,
+        diffBaseOurs = function()
+            self:diff_base_ours()
+        end,
+        diffBaseTheirs = function()
+            self:diff_base_theirs()
         end,
     }
 
@@ -188,13 +294,23 @@ function Conflict:init()
     end, {
         nargs = 1,
         complete = function(query)
-            return vim.iter(vim.tbl_keys(choice_map))
+            local suggestions = vim.iter(vim.tbl_keys(choice_map))
                 :filter(function(x)
                     return x:sub(1, #query) == query
                 end)
                 :totable()
+            table.sort(suggestions)
+
+            return suggestions
         end,
     })
+end
+
+function Conflict:init()
+    if require("conflict-marker.config").config.highlights then
+        self:init_hl()
+    end
+    self:init_user_cmd()
 end
 
 ---@param fn fun()
