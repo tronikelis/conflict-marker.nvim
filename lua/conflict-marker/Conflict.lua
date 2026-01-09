@@ -42,6 +42,14 @@ function Conflict:with_cursor_in_conflict_region(fn)
     vim.fn.setpos(".", cursor)
 end
 
+---@param from integer
+---@param to integer
+---@param pattern string
+---@return integer?
+function Conflict:search_in_range(from, to, pattern)
+    return utils.target_in_range(from, to, self:two_way_search(pattern))
+end
+
 function Conflict:refresh_hl_cursor()
     self:with_cursor_in_conflict_region(function()
         local start, ending = self:conflict_range()
@@ -51,8 +59,8 @@ function Conflict:refresh_hl_cursor()
 
         vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, start - 1, ending)
 
-        local mid = utils.target_in_range(start, ending, self:two_way_search(config.config.markers.mid))
-        local base = utils.target_in_range(start, ending, self:two_way_search(config.config.markers.base)) or 0
+        local mid = self:search_in_range(start, ending, config.config.markers.mid)
+        local base = self:search_in_range(start, ending, config.config.markers.base) or 0
         if not mid then
             return
         end
@@ -201,8 +209,8 @@ function Conflict:diff_ours_theirs()
         return
     end
 
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
-    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local base = self:search_in_range(from, to, config.config.markers.base)
     if not mid then
         return
     end
@@ -224,8 +232,8 @@ function Conflict:diff_base_ours()
         return
     end
 
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
-    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local base = self:search_in_range(from, to, config.config.markers.base)
     if not base or not mid then
         return
     end
@@ -244,8 +252,8 @@ function Conflict:diff_base_theirs()
         return
     end
 
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
-    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local base = self:search_in_range(from, to, config.config.markers.base)
     if not base or not mid then
         return
     end
@@ -300,7 +308,6 @@ function Conflict:init_user_cmd()
                 end)
                 :totable()
             table.sort(suggestions)
-
             return suggestions
         end,
     })
@@ -372,8 +379,8 @@ function Conflict:choose_ours()
         return
     end
 
-    local start = utils.target_in_range(from, to, self:two_way_search(config.config.markers.start))
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
+    local start = self:search_in_range(from, to, config.config.markers.start)
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
     if not start or not mid then
         return
     end
@@ -389,8 +396,8 @@ function Conflict:choose_theirs()
         return
     end
 
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
-    local ending = utils.target_in_range(from, to, self:two_way_search(config.config.markers.ending))
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local ending = self:search_in_range(from, to, config.config.markers.ending)
     if not mid or not ending then
         return
     end
@@ -406,12 +413,12 @@ function Conflict:conflict_range_without_base()
         return
     end
 
-    local base = utils.target_in_range(from, to, self:two_way_search(config.config.markers.base))
+    local base = self:search_in_range(from, to, config.config.markers.base)
     if not base then
         return from, to
     end
 
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
     if not mid then
         return
     end
@@ -429,9 +436,9 @@ function Conflict:choose_both()
         return
     end
 
-    local start = utils.target_in_range(from, to, self:two_way_search(config.config.markers.start))
-    local mid = utils.target_in_range(from, to, self:two_way_search(config.config.markers.mid))
-    local ending = utils.target_in_range(from, to, self:two_way_search(config.config.markers.ending))
+    local start = self:search_in_range(from, to, config.config.markers.start)
+    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local ending = self:search_in_range(from, to, config.config.markers.ending)
     if not start or not mid or not ending then
         return
     end
