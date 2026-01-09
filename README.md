@@ -44,6 +44,7 @@ You can customize these colors, I just picked something at random :P
 - [x] highlights
 - [x] resolving conflicts
 - [x] diff3 style
+- [x] diff conflict regions
 
 ## User commands
 
@@ -51,6 +52,11 @@ You can customize these colors, I just picked something at random :P
 - `Conflict theirs`: resolves the conflict under the cursor with their changes
 - `Conflict both`: resolves the conflict under the cursor with both changes (removes markers)
 - `Conflict none`: resolves the conflict the best way possible, just removing it xd
+- `Conflict diffOursTheirs`: open 2 windows to diff ours -> theirs region
+- `Conflict diffBaseOurs`: open 2 windows to diff base -> ours
+- `Conflict diffBaseTheirs`: open 2 windows to diff base -> theirs
+
+
 
 ## Highlighting
 
