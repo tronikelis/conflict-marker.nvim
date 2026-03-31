@@ -55,6 +55,7 @@ You can customize these colors, I just picked something at random :P
 - `Conflict diffOursTheirs`: open 2 windows to diff ours -> theirs region
 - `Conflict diffBaseOurs`: open 2 windows to diff base -> ours
 - `Conflict diffBaseTheirs`: open 2 windows to diff base -> theirs
+- `Conflict hlRefresh`: refresh the highlight in the buffer
 
 
 
