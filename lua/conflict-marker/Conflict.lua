@@ -1,8 +1,23 @@
 local const = require("conflict-marker.const")
-local utils = require("conflict-marker.utils")
-local config = require("conflict-marker.config")
+local init = require("conflict-marker")
 
 local NS_HL = vim.api.nvim_create_namespace("conflict-marker.nvim/hl")
+
+---returns first target which is in range [from, to]
+---@param ... integer
+---@param from integer
+---@param to integer
+---@return integer?
+local function target_in_range(from, to, ...)
+    local arg = { ... }
+    for _, v in ipairs(arg) do
+        if v >= from and v <= to then
+            return v
+        end
+    end
+
+    return nil
+end
 
 ---@class conflict-marker.Conflict
 ---@field bufnr integer
@@ -15,12 +30,16 @@ function Conflict:new(bufnr)
         bufnr = vim.api.nvim_get_current_buf()
     end
     ---@type conflict-marker.Conflict
-    local obj = {
-        bufnr = bufnr,
-    }
-    setmetatable(obj, { __index = self })
+    local obj = { bufnr = bufnr }
+    return setmetatable(obj, { __index = self })
+end
 
-    return obj
+---@param from integer
+---@param to integer
+---@param pattern string
+---@return integer?
+function Conflict:search_in_range(from, to, pattern)
+    return target_in_range(from, to, self:two_way_search(pattern))
 end
 
 function Conflict:with_cursor_in_conflict_region(fn)
@@ -36,18 +55,8 @@ function Conflict:with_cursor_in_conflict_region(fn)
     if #extmarks ~= 0 then
         vim.fn.cursor(extmarks[1][2] + 1, 1)
     end
-
     fn()
-
     vim.fn.setpos(".", cursor)
-end
-
----@param from integer
----@param to integer
----@param pattern string
----@return integer?
-function Conflict:search_in_range(from, to, pattern)
-    return utils.target_in_range(from, to, self:two_way_search(pattern))
 end
 
 function Conflict:refresh_hl_cursor()
@@ -59,8 +68,8 @@ function Conflict:refresh_hl_cursor()
 
         vim.api.nvim_buf_clear_namespace(self.bufnr, NS_HL, start - 1, ending)
 
-        local mid = self:search_in_range(start, ending, config.config.markers.mid)
-        local base = self:search_in_range(start, ending, config.config.markers.base) or 0
+        local mid = self:search_in_range(start, ending, init.config.markers.mid)
+        local base = self:search_in_range(start, ending, init.config.markers.base) or 0
         if not mid then
             return
         end
@@ -97,7 +106,7 @@ function Conflict:refresh_hl_all()
     while true do
         local conflict_start = 0
         self:in_buf(function()
-            conflict_start = vim.fn.search(config.config.markers.start, "cW")
+            conflict_start = vim.fn.search(init.config.markers.start, "cW")
         end)
         if conflict_start == 0 then
             break
@@ -107,7 +116,7 @@ function Conflict:refresh_hl_all()
 
         local conflict_end = 0
         self:in_buf(function()
-            conflict_end = vim.fn.search(config.config.markers.ending, "W")
+            conflict_end = vim.fn.search(init.config.markers.ending, "W")
         end)
         if conflict_end == 0 then
             break
@@ -209,8 +218,8 @@ function Conflict:diff_ours_theirs()
         return
     end
 
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
-    local base = self:search_in_range(from, to, config.config.markers.base)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
+    local base = self:search_in_range(from, to, init.config.markers.base)
     if not mid then
         return
     end
@@ -232,8 +241,8 @@ function Conflict:diff_base_ours()
         return
     end
 
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
-    local base = self:search_in_range(from, to, config.config.markers.base)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
+    local base = self:search_in_range(from, to, init.config.markers.base)
     if not base or not mid then
         return
     end
@@ -252,8 +261,8 @@ function Conflict:diff_base_theirs()
         return
     end
 
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
-    local base = self:search_in_range(from, to, config.config.markers.base)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
+    local base = self:search_in_range(from, to, init.config.markers.base)
     if not base or not mid then
         return
     end
@@ -289,6 +298,9 @@ function Conflict:init_user_cmd()
         diffBaseTheirs = function()
             self:diff_base_theirs()
         end,
+        hlRefresh = function()
+            self:refresh_hl_all()
+        end,
     }
 
     vim.api.nvim_buf_create_user_command(self.bufnr, "Conflict", function(ev)
@@ -314,7 +326,7 @@ function Conflict:init_user_cmd()
 end
 
 function Conflict:init()
-    if require("conflict-marker.config").config.highlights then
+    if init.config.highlights then
         self:init_hl()
     end
     self:init_user_cmd()
@@ -345,8 +357,8 @@ function Conflict:conflict_range()
     local in_range = true
 
     self:in_buf(function()
-        from = vim.fn.search(config.config.markers.start, "cnbW")
-        to = vim.fn.search(config.config.markers.ending, "cnW")
+        from = vim.fn.search(init.config.markers.start, "cnbW")
+        to = vim.fn.search(init.config.markers.ending, "cnW")
     end)
 
     if from == 0 or to == 0 then
@@ -355,7 +367,7 @@ function Conflict:conflict_range()
 
     self:in_buf(function()
         -- don't accept cursor pos
-        local up_end = vim.fn.search(config.config.markers.ending, "nbW")
+        local up_end = vim.fn.search(init.config.markers.ending, "nbW")
         if up_end == 0 then
             return
         end
@@ -379,8 +391,8 @@ function Conflict:choose_ours()
         return
     end
 
-    local start = self:search_in_range(from, to, config.config.markers.start)
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local start = self:search_in_range(from, to, init.config.markers.start)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
     if not start or not mid then
         return
     end
@@ -396,8 +408,8 @@ function Conflict:choose_theirs()
         return
     end
 
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
-    local ending = self:search_in_range(from, to, config.config.markers.ending)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
+    local ending = self:search_in_range(from, to, init.config.markers.ending)
     if not mid or not ending then
         return
     end
@@ -413,12 +425,12 @@ function Conflict:conflict_range_without_base()
         return
     end
 
-    local base = self:search_in_range(from, to, config.config.markers.base)
+    local base = self:search_in_range(from, to, init.config.markers.base)
     if not base then
         return from, to
     end
 
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
     if not mid then
         return
     end
@@ -436,9 +448,9 @@ function Conflict:choose_both()
         return
     end
 
-    local start = self:search_in_range(from, to, config.config.markers.start)
-    local mid = self:search_in_range(from, to, config.config.markers.mid)
-    local ending = self:search_in_range(from, to, config.config.markers.ending)
+    local start = self:search_in_range(from, to, init.config.markers.start)
+    local mid = self:search_in_range(from, to, init.config.markers.mid)
+    local ending = self:search_in_range(from, to, init.config.markers.ending)
     if not start or not mid or not ending then
         return
     end
