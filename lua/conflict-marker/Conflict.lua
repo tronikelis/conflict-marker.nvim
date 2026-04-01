@@ -326,7 +326,7 @@ function Conflict:init_user_cmd()
 end
 
 function Conflict:init()
-    if require("conflict-marker").config.highlights then
+    if init.config.highlights then
         self:init_hl()
     end
     self:init_user_cmd()
