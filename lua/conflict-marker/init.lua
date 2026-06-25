@@ -1,12 +1,12 @@
 local M = {}
 
----@class conflict-marker.Config.Markers
+---@class (exact) conflict-marker.Config.Markers
 ---@field start string
 ---@field ending string
 ---@field mid string
 ---@field base string
 
----@class conflict-marker.Config
+---@class (exact) conflict-marker.Config
 ---@field on_attach fun(arg: conflict-marker.Conflict)
 ---@field highlights boolean
 ---@field markers conflict-marker.Config.Markers
@@ -41,7 +41,7 @@ function M.check(buf)
     M.config.on_attach(c)
 end
 
----@param config conflict-marker.Config?
+---@param config table?
 function M.setup(config)
     config = config or {}
     M.config = vim.tbl_deep_extend("force", M.config, config)
